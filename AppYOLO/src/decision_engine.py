@@ -141,7 +141,7 @@ class SafetyDecisionEngine:
         trace_msg = "Status monitored...."
         if is_alarm:
             trace_msg = f"🔴Fire alarm triggered! Overall risk {final_risk:.2f}. Image weight {w_v:.2f}, sensor weight {w_s:.2f}"
-        elif conf > 0.8 and final_risk < self.alarm_threshold:
+        elif conf > 0.55 and final_risk < self.alarm_threshold:
             trace_msg = f"🟢 False alarms for suspected images were blocked. Although the visual features were high ({conf:.2f}), the ambient temperature was not abnormal, so the visual weight was forcibly reduced to {w_v:.2f}."
         elif temp > 60.0 and final_risk < self.alarm_threshold:
              trace_msg = f"🟡 Intercepting suspected hardware malfunction. Sensor temperature abnormal ({temp:.1f}°C) but no visual signs of fire; sensor weight has been forcibly reduced to {w_s:.2f}."
