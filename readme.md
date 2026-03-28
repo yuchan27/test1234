@@ -9,3 +9,4 @@ test url:http://signal.ee.bilkent.edu.tr/VisiFire/Demo/
 
 ## YOLOv11- PyroDetector
 ![image](AppYOLO/outputs/images/test_fire.jpg)
+![image](out.gif)
