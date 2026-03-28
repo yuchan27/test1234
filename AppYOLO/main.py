@@ -7,7 +7,7 @@ from src.inference.infer import YOLOInfer
 
 infer = YOLOInfer("models/release.pt")
 
-real_image_path = "test_fire.jpg"       
+real_image_path = "test/left1.png"       
 
 yolo_results, decision, vision_temp = infer.run_with_decision(
     image_path=real_image_path,
