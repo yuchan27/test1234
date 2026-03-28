@@ -23,7 +23,7 @@ print("解釋:", decision["explainability"]["trace_message"])
 
  
 result = infer.run(
-    "forest1.avi",
+    "test/forest1.avi",  
     save_path="outputs/out.mp4",
     with_decision=True      
 )

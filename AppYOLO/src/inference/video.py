@@ -16,10 +16,9 @@ class VideoInfer:
     def __init__(self, model_path="models/release.pt", tracker="botsort.yaml"):
         self.model = YOLO(model_path)
         self.tracker = tracker
-        self.decision_engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.75)
+        self.decision_engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.55)
 
-        
-        # --- 新增：建立測溫器實體 ---
+    
         self.temp_estimator = FireTemperatureEstimator()
    
     def _to_yolo_format_str(self, result):
@@ -75,7 +74,7 @@ class VideoInfer:
             return panel
 
         alarm = decision_result["decision"]["trigger_alarm"]
-        panel_color = (0, 0, 255) if alarm else (0, 220, 0)  # 紅 / 綠
+        panel_color = (0, 0, 255) if alarm else (0, 220, 0)  
         risk = decision_result["decision"]["risk_score"]
         action = decision_result["decision"]["suggested_action"]
         trace = decision_result["explainability"]["trace_message"]
@@ -89,7 +88,7 @@ class VideoInfer:
         cv2.rectangle(panel, (sx(30), sy(95)), (panel_w - sx(30), sy(165)), (45, 45, 50), -1)
         cv2.putText(panel, "VISION TEMPERATURE", (sx(50), sy(118)),
                     cv2.FONT_HERSHEY_SIMPLEX, sfs(0.58), (180, 180, 180), sth(1))
-        temp_str = f"{vision_temp:.0f}°C" if vision_temp is not None else "N/A"
+        temp_str = f"{vision_temp:.0f}-C" if vision_temp is not None else "N/A"
         cv2.putText(panel, temp_str, (sx(68), sy(155)),
                     cv2.FONT_HERSHEY_DUPLEX, sfs(1.35), panel_color, sth(3))
 

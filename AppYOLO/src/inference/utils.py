@@ -96,8 +96,8 @@ class FireTemperatureEstimator:
             pixel_temps_k = self.wavelength_term / ln_arg
             pixel_temps_c = pixel_temps_k - 273.15
             
-            # 物理極限濾波：火焰溫度合理範圍大約在 400°C ~ 1500°C 之間
-            pixel_temps_c = pixel_temps_c[(pixel_temps_c >= 300) & (pixel_temps_c <= 2000)]
+            # 物理極限濾波：火焰溫度合理範圍大約在 400°C ~ 1200°C 之間
+            pixel_temps_c = pixel_temps_c[(pixel_temps_c >= 400) & (pixel_temps_c <= 1200)]
 
             if len(pixel_temps_c) > 0:
                 # 4. 取中位數而非平均，避免被極端值干擾

@@ -22,7 +22,7 @@ class ImageInfer:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # 整合 SafetyDecisionEngine
-        self.decision_engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.75)
+        self.decision_engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.55)
         self.temp_estimator = FireTemperatureEstimator()
 
     def run(self, image_path, save=True):
