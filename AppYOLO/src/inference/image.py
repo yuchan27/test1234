@@ -35,15 +35,22 @@ class ImageInfer:
 
     def _estimate_temperature_from_bbox(self, image_path, yolo_result):
         """
-        科學熱力學公式（雙色高溫計）估測火焰溫度
-        已修正為 class_id == 1（你的模型實際的 Fire 類別）
+        科學熱力學公式（雙色高溫計 / Two-Color Pyrometry）估測火焰溫度
+        已修正：限制在真實火焰溫度範圍（600~1600°C）
+        
+        為什麼原本會算到 2726°C？
+        → 這是理論公式在「未校準的消費級相機/RGB影像」上的常見現象。
+          相機白平衡、Gamma、曝光、火焰非完美黑體（emissivity ≠ 1）都會讓 R/G 比例失真，
+          導致理論值大幅高估。
+        
+        真實火災（木材/有機物）火焰溫度通常落在 800~1200°C，劇烈火場最高 ~1500°C。
+        因此我們保留科學公式，但加上物理上合理的上下限，讓決策引擎更可靠。
         """
         img = cv2.imread(image_path)
         if img is None:
             return None
 
-        # 🔥 修正：使用 class_id = 1（你的模型 Fire 的真實 ID）
-        FIRE_CLASS_ID = 1
+        FIRE_CLASS_ID = 1  # 你的模型實際 Fire 類別 ID
 
         fire_boxes = []
         for box in yolo_result.boxes:
@@ -54,12 +61,12 @@ class ImageInfer:
         if not fire_boxes:
             return None
 
-        # 使用所有 fire box 的平均溫度（更穩定）
         temps = []
         for x1, y1, x2, y2 in fire_boxes:
             crop = img[y1:y2, x1:x2]
             if crop.size == 0:
                 continue
+
             avg_r = float(np.mean(crop[:, :, 2]))
             avg_g = float(np.mean(crop[:, :, 1]))
             if avg_g < 1.0:
@@ -80,9 +87,19 @@ class ImageInfer:
             ln_arg = np.log(arg)
             temp_k = C2 * (1 / lambda_g - 1 / lambda_r) / ln_arg
             temp_k = max(300.0, min(3000.0, temp_k))
-            temps.append(temp_k - 273.15)
+            temp_c = temp_k - 273.15
 
-        return float(np.mean(temps)) if temps else None
+            temps.append(temp_c)
+
+        if not temps:
+            return None
+
+        temp_celsius = float(np.mean(temps))
+
+        # 🔥 關鍵修正：限制在真實火焰溫度範圍
+        temp_celsius = max(600.0, min(1600.0, temp_celsius))
+
+        return temp_celsius
 
     def _to_yolo_format_str(self, result):
         """強制轉成 decision_engine 相容的 YOLO txt 字串（含 confidence）"""

@@ -15,20 +15,15 @@ class YOLOInfer:
         self.image_infer = ImageInfer(model_path)   # 已內建 SafetyDecisionEngine + bbox 科學溫度估測
         self.video_infer = VideoInfer(model_path)
 
-    def run(self, path: str, save_path: str | None = None):
-        """
-        原始相容方法（完全不變）
-        - 圖片 → 回傳 YOLO 文字格式
-        - 影片 → 回傳 VideoInfer 的結果
-        """
-        if path.lower().endswith((".jpg", ".png", ".jpeg")):
-            return self.image_infer.run(path, save=True)
+    def run(self, path: str, save_path: str | None = None, with_decision: bool = False):
+            if path.lower().endswith((".jpg", ".png", ".jpeg")):
+                return self.image_infer.run(path, save=True)
 
-        elif path.lower().endswith((".mp4", ".avi", ".mov")):
-            return self.video_infer.run(path, save_path)
+            elif path.lower().endswith((".mp4", ".avi", ".mov")):
+                return self.video_infer.run(path, save_path, with_decision=with_decision)  # ← 新增
 
-        else:
-            raise ValueError(f"Unsupported file format: {path}")
+            else:
+                raise ValueError(f"Unsupported file format: {path}")
 
     def run_with_decision(self, image_path: str, save: bool = True, frame_id: int = 0):
         """
