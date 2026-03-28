@@ -138,13 +138,13 @@ class SafetyDecisionEngine:
         """內部私有方法：生成送往 Action Execution 的決策字典"""
         is_alarm = final_risk >= self.alarm_threshold
         
-        trace_msg = "狀態監控中..."
+        trace_msg = "Status monitored...."
         if is_alarm:
-            trace_msg = f"🔴 觸發火災警報！綜合風險 {final_risk:.2f}。影像權重 {w_v:.2f}，感測器權重 {w_s:.2f}。"
+            trace_msg = f"🔴Fire alarm triggered! Overall risk {final_risk:.2f}. Image weight {w_v:.2f}, sensor weight {w_s:.2f}"
         elif conf > 0.8 and final_risk < self.alarm_threshold:
-            trace_msg = f"🟢 攔截疑似圖片假警報。視覺特徵雖高 ({conf:.2f}) 但環境溫度未異常，視覺權重已強制降至 {w_v:.2f}。"
+            trace_msg = f"🟢 False alarms for suspected images were blocked. Although the visual features were high ({conf:.2f}), the ambient temperature was not abnormal, so the visual weight was forcibly reduced to {w_v:.2f}."
         elif temp > 60.0 and final_risk < self.alarm_threshold:
-             trace_msg = f"🟡 攔截疑似硬體故障。感測器溫度異常 ({temp:.1f}°C) 但無起火視覺特徵，感測器權重已強制降至 {w_s:.2f}。"
+             trace_msg = f"🟡 Intercepting suspected hardware malfunction. Sensor temperature abnormal ({temp:.1f}°C) but no visual signs of fire; sensor weight has been forcibly reduced to {w_s:.2f}."
 
         return {
             "status": "success",

@@ -5,8 +5,11 @@ import numpy as np
 from datetime import datetime, timezone
 from ultralytics import YOLO
 from ultralytics.utils.plotting import colors
-from .utils import convert_to_yolo_format
+from .utils import convert_to_yolo_format,FireTemperatureEstimator
 from ..decision_engine import SafetyDecisionEngine
+ 
+ 
+
 
 
 class VideoInfer:
@@ -15,43 +18,10 @@ class VideoInfer:
         self.tracker = tracker
         self.decision_engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.75)
 
-    def _estimate_temperature_from_frame(self, frame, yolo_result):
-        """與 image.py 完全相同的科學熱力學公式（600~1600°C 合理範圍）"""
-        if frame is None:
-            return None
-        FIRE_CLASS_ID = 1
-        fire_boxes = []
-        for box in yolo_result.boxes:
-            if int(box.cls[0]) == FIRE_CLASS_ID:
-                x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
-                fire_boxes.append((x1, y1, x2, y2))
-        if not fire_boxes:
-            return None
-        temps = []
-        for x1, y1, x2, y2 in fire_boxes:
-            crop = frame[y1:y2, x1:x2]
-            if crop.size == 0:
-                continue
-            avg_r = float(np.mean(crop[:, :, 2]))
-            avg_g = float(np.mean(crop[:, :, 1]))
-            if avg_g < 1.0:
-                avg_g = 1.0
-            lambda_r = 700e-9
-            lambda_g = 546.1e-9
-            C2 = 0.014388
-            Cg = 1.0
-            ratio = avg_r / avg_g
-            lambda_ratio5 = (lambda_r / lambda_g) ** 5
-            arg = (1.0 / Cg) * ratio * lambda_ratio5
-            if arg <= 0:
-                continue
-            ln_arg = np.log(arg)
-            temp_k = C2 * (1 / lambda_g - 1 / lambda_r) / ln_arg
-            temp_k = max(300.0, min(3000.0, temp_k))
-            temps.append(temp_k - 273.15)
-        temp_celsius = float(np.mean(temps)) if temps else None
-        return max(600.0, min(1600.0, temp_celsius-1700)) if temp_celsius is not None else None
-
+        
+        # --- 新增：建立測溫器實體 ---
+        self.temp_estimator = FireTemperatureEstimator()
+   
     def _to_yolo_format_str(self, result):
         """產生 decision_engine 需要的 YOLO txt 字串"""
         if len(result.boxes) == 0:
@@ -228,7 +198,7 @@ class VideoInfer:
             # ==================== 專業儀表板 GUI ====================
             frame_to_write = annotated
             if with_decision:
-                vision_temp = self._estimate_temperature_from_frame(frame, result)
+                vision_temp = self.temp_estimator._estimate_temperature_from_frame(frame, result)
                 timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
                 visual_objects_str = self._to_yolo_format_str(result)
                 payload = {

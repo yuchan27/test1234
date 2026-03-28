@@ -1,4 +1,4 @@
-# main.py（你原本的程式碼，完全不用改）
+# main.py 
 from src.inference.infer import YOLOInfer
 
 
