@@ -9,6 +9,7 @@ class SafetyDecisionEngine:
     """
     神經符號安全決策引擎模組
     負責接收標準化 JSON Payload，進行多模態特徵解析、模糊規則匹配與衝突解決。
+    支援原始嵌套 JSON 結構與 YOLO (class x y w h) 純文字輸出格式。
     """
     def __init__(self, fps=30, alarm_threshold=0.75):
         self.fps = fps
@@ -35,7 +36,7 @@ class SafetyDecisionEngine:
 
         # 核心防呆規則
         rule1 = ctrl.Rule(self.v_conf['high'] & self.t_grad['zero'], self.w_v['very_low']) # 圖片攻擊
-        rule2 = ctrl.Rule(self.v_conf['high'] & self.t_grad['high'], self.w_v['high'])     # 真實火災
+        rule2 = ctrl.Rule(self.v_conf['high'] & self.t_grad['high'], self.w_v['high'])    # 真實火災
         rule3 = ctrl.Rule(self.v_conf['low'] & self.t_grad['high'], self.w_v['high'])      # 溫度計故障
         rule4 = ctrl.Rule((self.v_conf['low'] | self.v_conf['medium']) & self.t_grad['zero'], self.w_v['medium']) # 常態
 
@@ -60,16 +61,39 @@ class SafetyDecisionEngine:
             sensors = data['perceptions']['environmental_sensors']
             current_temp = sensors['temperature_celsius']
 
-            # 1c. 解析 視覺物件 (Visual Objects)
-            visual_objects = data['perceptions']['visual_objects']
+            # 1c. 解析 視覺物件 (支援 YOLO 純文字 或 原始 JSON 陣列)
+            visual_objects = data['perceptions'].get('visual_objects', [])
             v_conf = 0.0
+            FIRE_CLASS_ID = 0  # 假設 YOLO 模型中，類別 0 代表 fire
             
-            # 防呆遍歷：不預設物件順序，只尋找有危害標籤的物件
-            for obj in visual_objects:
-                if obj['label'] == 'fire':
-                    # 如果有多個火災框，取信心度最高者
-                    v_conf = max(v_conf, obj['confidence'])
+            # 判斷是否傳入 YOLO txt 字串 (例如: "0 0.7672 0.2889 0.0367 0.0546")
+            if isinstance(visual_objects, str):
+                for line in visual_objects.strip().split('\n'):
+                    if not line.strip(): 
+                        continue
                     
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        class_id = int(parts[0])
+                        
+                        if class_id == FIRE_CLASS_ID:
+                            # 如果 YOLO 輸出包含第 6 個值 (信心度)，優先使用
+                            if len(parts) >= 6:
+                                v_conf = max(v_conf, float(parts[5]))
+                            else:
+                                # 只有 5 個值 (class x y w h) 時，給予預設高信心度以觸發 Fuzzy 引擎
+                                v_conf = max(v_conf, 0.90) 
+                                
+            # 相容原本的 JSON 陣列物件格式
+            elif isinstance(visual_objects, list):
+                for obj in visual_objects:
+                    # 支援原本帶有 label 的格式，或是自行封裝的字典
+                    label = obj.get('label')
+                    class_id = obj.get('class_id')
+                    
+                    if label == 'fire' or class_id == FIRE_CLASS_ID:
+                        v_conf = max(v_conf, obj.get('confidence', 0.90))
+
             # ----------------------------------------------------
 
         except KeyError as e:
