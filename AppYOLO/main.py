@@ -5,7 +5,7 @@ from src.inference.infer import YOLOInfer
 
 
 
-infer = YOLOInfer("models/release26.pt")
+infer = YOLOInfer("models/release11.pt")
 
 real_image_path = "test/left1.png"       
 

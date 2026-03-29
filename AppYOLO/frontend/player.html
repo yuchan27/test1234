@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video Player</title>
+  <style>
+    :root {
+      --bg: #0f1518;
+      --panel: #182125;
+      --text: #e8eceb;
+      --muted: #9da8a6;
+      --accent: #1ab5ae;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 20% 20%, #24343a, var(--bg));
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+    }
+
+    .shell {
+      width: min(980px, 100%);
+      background: linear-gradient(160deg, rgba(24, 33, 37, 0.98), rgba(18, 27, 30, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: transparent;
+      color: var(--text);
+      padding: 6px 12px;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .btn.primary {
+      border-color: rgba(26, 181, 174, 0.45);
+      background: rgba(26, 181, 174, 0.2);
+      color: #c7fffc;
+    }
+
+    .viewer {
+      width: 100%;
+      background: #000;
+      display: grid;
+      place-items: center;
+      min-height: 340px;
+    }
+
+    #stream {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .error {
+      color: #ffb2b2;
+      padding: 14px 16px;
+      font-size: 0.86rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.12);
+      display: none;
+    }
+
+    @media (max-width: 760px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <div>
+        <p class="title">Video Player (MJPEG Stream)</p>
+        <p id="pathText" class="hint"></p>
+      </div>
+      <div class="actions">
+        <a id="downloadBtn" class="btn" href="#" target="_blank" rel="noopener noreferrer">Download</a>
+        <a class="btn primary" href="/">Back Dashboard</a>
+      </div>
+    </header>
+
+    <section class="viewer">
+      <img id="stream" alt="Video stream preview" />
+    </section>
+
+    <div id="errorText" class="error"></div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const relativePath = params.get("path") || "";
+
+    const stream = document.getElementById("stream");
+    const pathText = document.getElementById("pathText");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const errorText = document.getElementById("errorText");
+
+    if (!relativePath) {
+      errorText.textContent = "Missing video path parameter.";
+      errorText.style.display = "block";
+    } else {
+      pathText.textContent = `Source: ${relativePath}`;
+      stream.src = `/api/video/mjpeg?path=${encodeURIComponent(relativePath)}&fps=15&loop=true`;
+      downloadBtn.href = `/${relativePath}`;
+
+      stream.addEventListener("error", () => {
+        errorText.textContent = "Failed to open video stream preview. You can still use Download.";
+        errorText.style.display = "block";
+      });
+    }
+  </script>
+</body>
+</html>

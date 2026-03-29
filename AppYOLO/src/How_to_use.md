@@ -1,30 +1,62 @@
-# 引入格式
-# Program : decision_engine.py
+# AppYOLO Web Quick Start
 
-# 從檔案 safety_engine.py 中匯入 SafetyDecisionEngine 類別
-from safety_engine import SafetyDecisionEngine
+## 1) Install Dependencies
 
-# 1. 初始化引擎 (設定 FPS 與 警報閾值)
-engine = SafetyDecisionEngine(fps=30, alarm_threshold=0.75)
+```bash
+pip install -r requirements.txt
+```
 
-# 2. 準備符合格式的 JSON Payload (包含 YOLO txt 格式)
-payload = {
-    "context": {
-        "timestamp": "2026-03-28T12:45:32.123Z",
-        "frame_id": 1042
-    },
-    "perceptions": {
-        "visual_objects": "0 0.767 0.288 0.036 0.054", # YOLO 格式字串
-        "environmental_sensors": {
-            "temperature_celsius": 25.4
-        }
-    }
-}
+## 2) Start Backend + Frontend
 
-# 3. 執行決策評估
-result = engine.evaluate_payload(payload)
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
 
-# 4. 取得結果
-if result["status"] == "success":
-    print(f"決策結果: {result['decision']['suggested_action']}")
-    print(f"解析訊息: {result['explainability']['trace_message']}")
+## 3) Open Dashboard
+
+Open this URL in your browser:
+
+```text
+http://127.0.0.1:8000
+```
+
+## API List
+
+- `GET /api/health`
+    - Backend health, model status, live worker status.
+- `GET /api/model/info`
+    - Model path and class mapping from YOLO.
+- `POST /api/inference/image`
+    - Multipart image upload inference.
+    - Returns detections, decision, explainability, temperature, and annotated image base64.
+- `POST /api/inference/local`
+    - Inference using a workspace-relative local image path.
+- `POST /api/inference/video`
+    - Multipart video upload inference.
+    - Runs original video logic in headless mode and outputs processed video file.
+- `POST /api/inference/video/local`
+    - Inference using a workspace-relative local video path.
+- `POST /api/pipeline/main/run`
+    - Runs the original main workflow logic through backend API.
+- `POST /api/pipeline/vcn/run`
+    - Runs the original VCN multi-camera + map composition logic through backend API.
+- `GET /api/generated/files`
+    - Lists generated files under outputs for frontend gallery rendering.
+- `POST /api/live/start`
+    - Start live stream worker (source `0` for webcam, or a video path).
+- `POST /api/live/stop`
+    - Stop live stream worker.
+- `GET /api/live/state`
+    - Current live state and recent history arrays for charting.
+- `GET /api/live/frame`
+    - Latest annotated JPEG frame.
+- `GET /api/live/events`
+    - Server Sent Events stream for dynamic metric updates.
+
+## Minimal Curl Example
+
+```bash
+curl -X POST "http://127.0.0.1:8000/api/live/start" \
+    -H "Content-Type: application/json" \
+    -d '{"source":"0","conf":0.25}'
+```

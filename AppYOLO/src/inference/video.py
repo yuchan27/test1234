@@ -140,6 +140,7 @@ class VideoInfer:
         half=False,
         device=None,
         with_decision: bool = False,  # 開啟專業儀表板
+        display: bool = True,
     ):
         cap = cv2.VideoCapture(video_path)
         all_results = []
@@ -219,9 +220,10 @@ class VideoInfer:
                 combined = np.hstack((annotated, dashboard))
 
                 # 即時顯示
-                cv2.imshow("🔥 YOLO Fire Safety - Professional Monitor", combined)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
+                if display:
+                    cv2.imshow("🔥 YOLO Fire Safety - Professional Monitor", combined)
+                    if cv2.waitKey(1) & 0xFF == ord('q'):
+                        break
 
                 # 同時把決策資訊存入回傳結果
                 all_results[-1]["vision_temp"] = vision_temp
@@ -238,7 +240,7 @@ class VideoInfer:
         cap.release()
         if writer:
             writer.release()
-        if with_decision:
+        if with_decision and display:
             cv2.destroyAllWindows()
 
         # FPS 統計
