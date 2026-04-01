@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fire Vision Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/assets/styles.css?v=20260329c" />
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <div class="ambient ambient-c"></div>
+
+  <main class="shell">
+    <header class="hero reveal">
+      <div>
+        <p class="eyebrow">Material 3 Inspired Dynamic UX</p>
+        <h1>Fire Vision Command Center</h1>
+        <p class="subtext">YOLO backend + decision engine + live telemetry API in one adaptive dashboard.</p>
+        <p id="modelMeta" class="model-meta">Loading model metadata...</p>
+      </div>
+      <div class="hero-actions">
+        <button id="btnHealth" class="btn tonal" type="button">Check API</button>
+        <span id="healthBadge" class="badge neutral">BOOTING</span>
+      </div>
+    </header>
+
+    <section class="layout">
+      <article class="card top-card reveal delay-1">
+        <div class="card-header">
+          <h2>Image Inference</h2>
+          <span class="pill">POST /api/inference/image</span>
+        </div>
+        <form id="uploadForm" class="stack">
+          <label class="input-label" for="imageInput">Upload JPG / PNG frame</label>
+          <input id="imageInput" type="file" accept=".jpg,.jpeg,.png" />
+          <button id="uploadBtn" class="btn filled" type="submit">Run Inference</button>
+        </form>
+        <p id="uploadStatus" class="helper">Waiting for image upload.</p>
+      </article>
+
+      <article class="card top-card reveal delay-2">
+        <div class="card-header">
+          <h2>Video Inference</h2>
+          <span class="pill">POST /api/inference/video</span>
+        </div>
+        <form id="videoForm" class="stack">
+          <label class="input-label" for="videoInput">Upload MP4 / AVI / MOV</label>
+          <input id="videoInput" type="file" accept=".mp4,.avi,.mov,.mkv,.m4v" />
+          <button id="videoBtn" class="btn filled" type="submit">Run Video Inference</button>
+        </form>
+        <p id="videoStatus" class="helper">Waiting for video upload.</p>
+      </article>
+
+      <article class="card top-card reveal delay-3">
+        <div class="card-header">
+          <h2>Original Pipelines</h2>
+          <span class="pill">VCN.py</span>
+        </div>
+        <div class="stack">
+          <p class="helper">Run original VCN logic as backend API without changing your script behavior.</p>
+          <div class="button-row">
+            <button id="btnRunVCN" class="btn tonal" type="button">Run VCN Logic</button>
+          </div>
+          <p id="pipelineStatus" class="helper">Pipeline idle.</p>
+          <p class="helper">VCN output image will be shown in Annotated Preview.</p>
+        </div>
+      </article>
+
+      <article class="card live-card reveal delay-2">
+        <div class="card-header">
+          <h2>Live Stream</h2>
+          <span class="pill">SSE + Frame Pull</span>
+        </div>
+        <div class="stack">
+          <label class="input-label" for="sourceInput">Source (0 for webcam or a video path)</label>
+          <input id="sourceInput" type="text" value="0" placeholder="0" />
+
+          <label class="input-label" for="confInput">Confidence threshold</label>
+          <input id="confInput" type="number" min="0.05" max="0.95" step="0.05" value="0.25" />
+
+          <label class="input-label" for="frameSkipInput">Frame skip (1 = process every frame)</label>
+          <input id="frameSkipInput" type="number" min="1" max="8" step="1" value="1" />
+
+          <label class="input-label" for="maxWidthInput">Max frame width (performance cap)</label>
+          <input id="maxWidthInput" type="number" min="640" max="3840" step="64" value="1280" />
+
+          <div class="button-row">
+            <button id="btnLiveStart" class="btn filled" type="button">Start Live</button>
+            <button id="btnLiveStop" class="btn outline" type="button">Stop Live</button>
+            <span id="streamBadge" class="badge neutral">IDLE</span>
+          </div>
+        </div>
+        <p class="helper">Tip: higher frame skip and lower max width reduce lag but lower detail.</p>
+        <p id="streamStatus" class="helper">Live stream not started.</p>
+        <p id="streamLogPath" class="helper">Live log: not started.</p>
+      </article>
+
+      <article class="card media-card reveal delay-3">
+        <div class="card-header">
+          <h2>Annotated Preview</h2>
+          <div class="button-row">
+            <span class="pill">GET /api/live/frame</span>
+            <button id="btnPreviewZoom" class="btn outline" type="button">Zoom</button>
+          </div>
+        </div>
+        <div id="mediaLiveLayout" class="media-live-layout snapshot-hidden">
+          <div class="media-wrap">
+            <img id="liveFrame" alt="Annotated frame preview" />
+            <div id="frameFallback" class="media-fallback">No frame yet</div>
+          </div>
+
+          <aside id="liveSidePanel" class="live-side-panel hidden">
+            <p class="live-side-title">Live Snapshot</p>
+
+            <div class="side-stat-grid">
+              <div class="side-stat-card">
+                <p class="side-stat-label">Temperature</p>
+                <p id="sideTempValue" class="side-stat-value">0 °C</p>
+              </div>
+              <div class="side-stat-card">
+                <p class="side-stat-label">Risk Score</p>
+                <p id="sideRiskValue" class="side-stat-value">0.00</p>
+              </div>
+              <div class="side-stat-card">
+                <p class="side-stat-label">Top Confidence</p>
+                <p id="sideTopConfValue" class="side-stat-value">0%</p>
+              </div>
+              <div class="side-stat-card">
+                <p class="side-stat-label">Detections</p>
+                <p id="sideDetCountValue" class="side-stat-value">0</p>
+              </div>
+            </div>
+
+            <p class="side-inline-meta">Top Class: <span id="sideTopClassValue">No detection</span></p>
+            <p class="side-inline-meta">Action: <span id="sideActionValue">CONTINUE_MONITORING</span></p>
+
+            <div class="side-detection-box">
+              <p class="side-stat-label">Top Detections</p>
+              <ul id="sideDetectionList" class="side-detection-list">
+                <li class="side-empty">No detections yet</li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </article>
+
+      <article class="card metrics-card reveal delay-4">
+        <div class="card-header">
+          <h2>Telemetry and Decisions</h2>
+          <span class="pill">Real-time Metrics</span>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi">
+            <p class="kpi-title">Risk Score</p>
+            <p id="riskValue" class="kpi-value">0.00</p>
+            <p id="riskState" class="kpi-foot">MONITOR</p>
+          </div>
+          <div class="kpi">
+            <p class="kpi-title">Vision Temp (C)</p>
+            <p id="tempValue" class="kpi-value">0</p>
+            <p class="kpi-foot">Estimated from flame pixels</p>
+          </div>
+          <div class="kpi">
+            <p class="kpi-title">FPS</p>
+            <p id="fpsValue" class="kpi-value">0</p>
+            <p class="kpi-foot">Live inference speed</p>
+          </div>
+          <div class="kpi">
+            <p class="kpi-title">Detections</p>
+            <p id="detCountValue" class="kpi-value">0</p>
+            <p id="decisionAction" class="kpi-foot">CONTINUE_MONITORING</p>
+          </div>
+          <div class="kpi">
+            <p class="kpi-title">Top Confidence</p>
+            <p id="topConfValue" class="kpi-value">0%</p>
+            <p id="topClassValue" class="kpi-foot">No detection</p>
+          </div>
+        </div>
+
+        <div class="chart-wrap">
+          <div class="chart-meta">X軸: 時間 ｜ 左Y軸: Risk Score (0~1) ｜ 右Y軸: 溫度 (°C)</div>
+          <canvas id="riskChart"></canvas>
+        </div>
+
+        <div class="table-wrap">
+          <div class="chart-meta">直播即時表格：當前溫度 / 偵測類別 / 信心度 / 位置</div>
+          <div class="detection-scroll">
+            <table class="telemetry-table">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Value</th>
+                  <th>BBox / Live Info</th>
+                </tr>
+              </thead>
+              <tbody id="detectionBody">
+                <tr>
+                  <td colspan="3" class="empty-cell">No detections yet</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </article>
+
+      <article class="card artifacts-card reveal delay-4">
+        <div class="card-header">
+          <h2>Generated Artifacts</h2>
+          <div class="button-row">
+            <label class="input-label" for="artifactLimit">Show</label>
+            <select id="artifactLimit" class="artifact-select">
+              <option value="24">24</option>
+              <option value="48" selected>48</option>
+              <option value="80">80</option>
+            </select>
+            <button id="btnRefreshArtifacts" class="btn outline" type="button">Refresh</button>
+            <button id="btnCleanupArtifacts" class="btn outline" type="button">Clean Old</button>
+            <span class="pill">GET /api/generated/files</span>
+          </div>
+        </div>
+        <p id="artifactSummary" class="helper">No generated files loaded yet.</p>
+        <div id="artifactList" class="artifact-list">
+          <p class="helper">No generated files loaded yet.</p>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div id="mediaModal" class="media-modal hidden" aria-hidden="true">
+    <div class="media-modal-card">
+      <div class="media-modal-header">
+        <p id="mediaModalTitle" class="media-modal-title">Preview</p>
+        <div class="button-row">
+          <a id="mediaModalDownload" class="btn outline" href="#" target="_blank" rel="noopener noreferrer">Download</a>
+          <button id="btnMediaClose" class="btn filled" type="button">Close</button>
+        </div>
+      </div>
+      <div class="media-modal-body">
+        <img id="mediaModalImage" alt="Expanded media preview" />
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/app.js?v=20260329g" defer></script>
+</body>
+</html>
